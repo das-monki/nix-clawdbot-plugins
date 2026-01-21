@@ -15,7 +15,10 @@ piper-speak "Hello, how are you today?"
 piper-speak -o output.wav "This will be saved to a file"
 
 # Use a different voice
-piper-speak -v en_GB-alba-medium "Hello from Britain"
+piper-speak -v en_US-libritts_r-medium "Hello world"
+
+# Use a multi-speaker model with specific speaker
+piper-speak -v en_US-libritts_r-medium -s 3922 "Hello world"
 
 # List installed voices
 piper-speak --list
@@ -24,17 +27,26 @@ piper-speak --list
 piper-speak --download en_US-amy-medium
 ```
 
-## Available Voices
+## Bundled Voices
 
-Popular English voices:
+These voices are included and work offline:
 - `en_US-lessac-medium` (default) - American English, neutral
-- `en_US-amy-medium` - American English, female
-- `en_US-ryan-medium` - American English, male
-- `en_GB-alba-medium` - British English, female
-- `en_GB-aru-medium` - British English, male
+- `en_US-libritts_r-medium` - American English, multi-speaker (use -s for speaker ID)
 
-Voices are downloaded automatically on first use. Browse all voices at:
+## Multi-Speaker Models
+
+Some models like `en_US-libritts_r-medium` support multiple speakers. Use `-s <ID>` to select:
+```bash
+piper-speak -v en_US-libritts_r-medium -s 3922 "This is speaker 3922"
+```
+
+## Additional Voices
+
+More voices can be downloaded on first use. Browse all voices at:
 https://huggingface.co/rhasspy/piper-voices
+
+Listen to samples at:
+https://rhasspy.github.io/piper-samples/
 
 ## When to Use
 

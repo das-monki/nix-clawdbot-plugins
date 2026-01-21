@@ -22,6 +22,18 @@
             hash = "sha256:184hnvd8389xpdm0x2w6phss23v5pb34i0lhd4nmy1gdgd0rrqgg";
           };
         };
+        "en_US-libritts_r-medium" = {
+          onnx = {
+            url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx";
+            hash = "sha256:159iq7x4idczq4p5ap9wmf918jfhk4brydhz0zsgq5nnf7h8bfqh";
+          };
+          json = {
+            url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx.json";
+            hash = "sha256:1cxgr5dm0y4q4rxjal80yhbjhydzdxnijg9rkj0mwcyqs9hdqwdl";
+          };
+          # Multi-speaker model - default to speaker 3922
+          defaultSpeaker = "3922";
+        };
       };
 
       # Create a derivation containing bundled voice models
@@ -55,6 +67,7 @@
             echo ""
             echo "Options:"
             echo "  -v, --voice NAME    Voice model name (default: $DEFAULT_VOICE)"
+            echo "  -s, --speaker ID    Speaker ID for multi-speaker models"
             echo "  -o, --output FILE   Output to WAV file instead of playing"
             echo "  -l, --list          List installed voices"
             echo "  --download NAME     Download a voice model"
@@ -94,12 +107,14 @@
           }
 
           VOICE="$DEFAULT_VOICE"
+          SPEAKER=""
           OUTPUT=""
           TEXT=""
 
           while [[ $# -gt 0 ]]; do
             case "$1" in
               -v|--voice) VOICE="$2"; shift 2 ;;
+              -s|--speaker) SPEAKER="$2"; shift 2 ;;
               -o|--output) OUTPUT="$2"; shift 2 ;;
               -l|--list) list_voices; exit 0 ;;
               --download) download_voice "$2"; exit 0 ;;
@@ -125,11 +140,17 @@
             MODEL_PATH="$VOICES_DIR/$VOICE.onnx"
           fi
 
+          # Build piper arguments
+          PIPER_ARGS=(--model "$MODEL_PATH")
+          if [ -n "$SPEAKER" ]; then
+            PIPER_ARGS+=(--speaker "$SPEAKER")
+          fi
+
           if [ -n "$OUTPUT" ]; then
-            echo "$TEXT" | ${pkgs.piper-tts}/bin/piper --model "$MODEL_PATH" --output_file "$OUTPUT"
+            echo "$TEXT" | ${pkgs.piper-tts}/bin/piper "''${PIPER_ARGS[@]}" --output_file "$OUTPUT"
             echo "Saved to: $OUTPUT"
           else
-            echo "$TEXT" | ${pkgs.piper-tts}/bin/piper --model "$MODEL_PATH" --output-raw | \
+            echo "$TEXT" | ${pkgs.piper-tts}/bin/piper "''${PIPER_ARGS[@]}" --output-raw | \
               ${pkgs.ffmpeg}/bin/ffplay -nodisp -autoexit -f s16le -ar 22050 -ac 1 -i - 2>/dev/null
           fi
         '';
@@ -142,10 +163,10 @@
           # Without bundled voices (downloads on first use)
           piper-speak = mkPiperSpeak { inherit system; voices = []; };
 
-          # With default voice bundled (~61MB)
+          # With voices bundled (~136MB total)
           piper-speak-with-voices = mkPiperSpeak {
             inherit system;
-            voices = [ "en_US-lessac-medium" ];
+            voices = [ "en_US-lessac-medium" "en_US-libritts_r-medium" ];
           };
 
           # Default includes bundled voice for offline use
