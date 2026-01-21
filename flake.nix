@@ -60,13 +60,12 @@
 
           BUNDLED_DIR="${bundledDir}"
           VOICES_DIR="''${PIPER_VOICES_DIR:-$HOME/.local/share/piper-voices}"
-          DEFAULT_VOICE="''${PIPER_DEFAULT_VOICE:-en_US-lessac-medium}"
 
           usage() {
             echo "Usage: piper-speak [OPTIONS] <text>"
             echo ""
             echo "Options:"
-            echo "  -v, --voice NAME    Voice model name (default: $DEFAULT_VOICE)"
+            echo "  -v, --voice NAME    Voice model name (auto-detected if only one installed)"
             echo "  -s, --speaker ID    Speaker ID for multi-speaker models"
             echo "  -o, --output FILE   Output to WAV file instead of playing"
             echo "  -l, --list          List installed voices"
@@ -76,6 +75,22 @@
             echo ""
             echo "Bundled voices: ${builtins.concatStringsSep ", " voices}"
             '' else ""}
+          }
+
+          # Get all installed voices (bundled + downloaded)
+          get_installed_voices() {
+            local voices=()
+            ${if bundledDir != "" then ''
+            while IFS= read -r v; do
+              [ -n "$v" ] && voices+=("$v")
+            done < <(find "$BUNDLED_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sort)
+            '' else ""}
+            if [ -d "$VOICES_DIR" ]; then
+              while IFS= read -r v; do
+                [ -n "$v" ] && voices+=("$v")
+              done < <(find "$VOICES_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sort)
+            fi
+            printf '%s\n' "''${voices[@]}" | sort -u
           }
 
           list_voices() {
@@ -106,7 +121,7 @@
             echo "Downloaded: $voice"
           }
 
-          VOICE="$DEFAULT_VOICE"
+          VOICE=""
           SPEAKER=""
           OUTPUT=""
           TEXT=""
@@ -128,7 +143,22 @@
             exit 1
           fi
 
-          # Priority: bundled > user-downloaded > download on demand
+          # Auto-detect voice if not specified
+          if [ -z "$VOICE" ]; then
+            mapfile -t installed < <(get_installed_voices)
+            if [ "''${#installed[@]}" -eq 0 ]; then
+              echo "Error: No voices installed. Use --download to get a voice first." >&2
+              exit 1
+            elif [ "''${#installed[@]}" -eq 1 ]; then
+              VOICE="''${installed[0]}"
+            else
+              echo "Error: Multiple voices installed. Please specify one with -v:" >&2
+              printf '  %s\n' "''${installed[@]}" >&2
+              exit 1
+            fi
+          fi
+
+          # Find voice path: bundled > user-downloaded > download on demand
           MODEL_PATH=""
           if [ -n "$BUNDLED_DIR" ] && [ -f "$BUNDLED_DIR/$VOICE.onnx" ]; then
             MODEL_PATH="$BUNDLED_DIR/$VOICE.onnx"
