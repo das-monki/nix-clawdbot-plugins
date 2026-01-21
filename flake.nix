@@ -10,12 +10,43 @@
       supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
       forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems f;
 
-      mkPiperSpeak = system:
+      # Voice model registry with pre-computed hashes
+      voiceRegistry = {
+        "en_US-lessac-medium" = {
+          onnx = {
+            url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx";
+            hash = "sha256:17q1mzm6xd5i2rxx2xwqkxvfx796kmp1lvk4mwkph602k7k0kzjy";
+          };
+          json = {
+            url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json";
+            hash = "sha256:184hnvd8389xpdm0x2w6phss23v5pb34i0lhd4nmy1gdgd0rrqgg";
+          };
+        };
+      };
+
+      # Create a derivation containing bundled voice models
+      mkPiperVoices = { pkgs, voices }:
+        if voices == [] then null
+        else pkgs.runCommand "piper-voices-1.0.0" {} ''
+          mkdir -p $out
+          ${builtins.concatStringsSep "\n" (map (voice:
+            let v = voiceRegistry.${voice}; in ''
+              cp ${pkgs.fetchurl { url = v.onnx.url; hash = v.onnx.hash; }} $out/${voice}.onnx
+              cp ${pkgs.fetchurl { url = v.json.url; hash = v.json.hash; }} $out/${voice}.onnx.json
+            ''
+          ) voices)}
+        '';
+
+      # Create piper-speak wrapper with optional bundled voices
+      mkPiperSpeak = { system, voices ? [] }:
         let
           pkgs = import nixpkgs { inherit system; };
+          bundledVoices = mkPiperVoices { inherit pkgs voices; };
+          bundledDir = if bundledVoices != null then "${bundledVoices}" else "";
         in pkgs.writeShellScriptBin "piper-speak" ''
           set -euo pipefail
 
+          BUNDLED_DIR="${bundledDir}"
           VOICES_DIR="''${PIPER_VOICES_DIR:-$HOME/.local/share/piper-voices}"
           DEFAULT_VOICE="''${PIPER_DEFAULT_VOICE:-en_US-lessac-medium}"
 
@@ -28,15 +59,21 @@
             echo "  -l, --list          List installed voices"
             echo "  --download NAME     Download a voice model"
             echo "  -h, --help          Show this help"
+            ${if bundledDir != "" then ''
+            echo ""
+            echo "Bundled voices: ${builtins.concatStringsSep ", " voices}"
+            '' else ""}
           }
 
           list_voices() {
+            echo "Installed voices:"
+            ${if bundledDir != "" then ''
+            echo "  Bundled:"
+            find "$BUNDLED_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sed 's/^/    /' | sort
+            '' else ""}
             if [ -d "$VOICES_DIR" ]; then
-              echo "Installed voices in $VOICES_DIR:"
-              find "$VOICES_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sort
-            else
-              echo "No voices directory found at $VOICES_DIR"
-              echo "Download a voice with: piper-speak --download <voice-name>"
+              echo "  Downloaded ($VOICES_DIR):"
+              find "$VOICES_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sed 's/^/    /' | sort
             fi
           }
 
@@ -76,10 +113,16 @@
             exit 1
           fi
 
-          MODEL_PATH="$VOICES_DIR/$VOICE.onnx"
-          if [ ! -f "$MODEL_PATH" ]; then
+          # Priority: bundled > user-downloaded > download on demand
+          MODEL_PATH=""
+          if [ -n "$BUNDLED_DIR" ] && [ -f "$BUNDLED_DIR/$VOICE.onnx" ]; then
+            MODEL_PATH="$BUNDLED_DIR/$VOICE.onnx"
+          elif [ -f "$VOICES_DIR/$VOICE.onnx" ]; then
+            MODEL_PATH="$VOICES_DIR/$VOICE.onnx"
+          else
             echo "Voice '$VOICE' not found. Downloading..."
             download_voice "$VOICE"
+            MODEL_PATH="$VOICES_DIR/$VOICE.onnx"
           fi
 
           if [ -n "$OUTPUT" ]; then
@@ -95,20 +138,30 @@
       packages = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; };
-          piper-speak = mkPiperSpeak system;
         in {
-          inherit piper-speak;
-          default = piper-speak;
+          # Without bundled voices (downloads on first use)
+          piper-speak = mkPiperSpeak { inherit system; voices = []; };
+
+          # With default voice bundled (~61MB)
+          piper-speak-with-voices = mkPiperSpeak {
+            inherit system;
+            voices = [ "en_US-lessac-medium" ];
+          };
+
+          # Default includes bundled voice for offline use
+          default = self.packages.${system}.piper-speak-with-voices;
         }
       );
 
       devShells = forAllSystems (system:
         let
           pkgs = import nixpkgs { inherit system; };
-          piper-speak = mkPiperSpeak system;
         in {
           default = pkgs.mkShell {
-            packages = [ piper-speak pkgs.piper-tts ];
+            packages = [
+              self.packages.${system}.piper-speak-with-voices
+              pkgs.piper-tts
+            ];
           };
         }
       );
@@ -117,7 +170,7 @@
         piper-tts = {
           name = "piper-tts";
           skills = [ ./plugins/piper-tts/skills/piper-tts ];
-          packages = [];
+          packages = [];  # Uses flake.packages (piper-speak-with-voices by default)
           needs = {
             stateDirs = [ ".local/share/piper-voices" ];
             requiredEnv = [];
