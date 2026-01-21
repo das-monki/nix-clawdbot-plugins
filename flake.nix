@@ -180,8 +180,11 @@
             echo "$TEXT" | ${pkgs.piper-tts}/bin/piper "''${PIPER_ARGS[@]}" --output_file "$OUTPUT"
             echo "Saved to: $OUTPUT"
           else
-            echo "$TEXT" | ${pkgs.piper-tts}/bin/piper "''${PIPER_ARGS[@]}" --output-raw | \
-              ${pkgs.ffmpeg}/bin/ffplay -nodisp -autoexit -f s16le -ar 22050 -ac 1 -i - 2>/dev/null
+            # Use temp file to avoid broken pipe issues on macOS
+            TMPFILE=$(mktemp --suffix=.wav)
+            trap "rm -f '$TMPFILE'" EXIT
+            echo "$TEXT" | ${pkgs.piper-tts}/bin/piper "''${PIPER_ARGS[@]}" --output_file "$TMPFILE"
+            ${pkgs.ffmpeg}/bin/ffplay -nodisp -autoexit "$TMPFILE" 2>/dev/null
           fi
         '';
 
