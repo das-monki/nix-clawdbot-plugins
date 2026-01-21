@@ -7,14 +7,12 @@
   };
 
   outputs = { self, nixpkgs, flake-utils }:
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-
-        # ============================================================
-        # PIPER-TTS PLUGIN
-        # ============================================================
-        piper-speak = pkgs.writeShellScriptBin "piper-speak" ''
+    let
+      # Helper to create piper-speak for a given system
+      mkPiperSpeak = system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+        in pkgs.writeShellScriptBin "piper-speak" ''
           set -euo pipefail
 
           VOICES_DIR="''${PIPER_VOICES_DIR:-$HOME/.local/share/piper-voices}"
@@ -98,27 +96,37 @@
           fi
         '';
 
+    in
+    # Per-system outputs (packages, devShells)
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs { inherit system; };
+        piper-speak = mkPiperSpeak system;
       in {
         packages = {
           piper-speak = piper-speak;
           default = piper-speak;
         };
 
-        clawdbotPlugins = {
-          piper-tts = {
-            name = "piper-tts";
-            skills = [ ./plugins/piper-tts/skills/piper-tts ];
-            packages = [ piper-speak pkgs.piper-tts ];
-            needs = {
-              stateDirs = [ ".local/share/piper-voices" ];
-              requiredEnv = [];
-            };
-          };
-        };
-
         devShells.default = pkgs.mkShell {
           packages = [ piper-speak pkgs.piper-tts ];
         };
       }
-    );
+    )
+    //
+    # Top-level clawdbotPlugins (not per-system)
+    {
+      clawdbotPlugins = {
+        piper-tts = {
+          name = "piper-tts";
+          skills = [ ./plugins/piper-tts/skills/piper-tts ];
+          # packages will be resolved per-system by the clawdbot module
+          packages = [];
+          needs = {
+            stateDirs = [ ".local/share/piper-voices" ];
+            requiredEnv = [];
+          };
+        };
+      };
+    };
 }
