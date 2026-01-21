@@ -1,7 +1,7 @@
 ---
 name: piper-tts
 description: Local neural text-to-speech using Piper
-always: true
+metadata: {"clawdbot":{"always":true,"requires":{"bins":["piper-speak"]}}}
 ---
 
 Use `piper-speak` to convert text to speech locally using the Piper TTS engine.
