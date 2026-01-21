@@ -189,21 +189,14 @@
         '';
 
     in {
-      packages = forAllSystems (system:
-        let
-          pkgs = import nixpkgs { inherit system; };
-        in {
-          # Without bundled voices (downloads on first use)
-          piper-speak = mkPiperSpeak { inherit system; voices = []; };
-
-          # With voice bundled (~75MB)
-          piper-speak-with-voices = mkPiperSpeak {
+      packages = forAllSystems (system: {
+          # Bundled voice (~75MB), can download additional voices at runtime
+          piper-speak = mkPiperSpeak {
             inherit system;
             voices = [ "en_US-libritts_r-medium" ];
           };
 
-          # Default includes bundled voice for offline use
-          default = self.packages.${system}.piper-speak-with-voices;
+          default = self.packages.${system}.piper-speak;
         }
       );
 
@@ -213,7 +206,7 @@
         in {
           default = pkgs.mkShell {
             packages = [
-              self.packages.${system}.piper-speak-with-voices
+              self.packages.${system}.piper-speak
               pkgs.piper-tts
             ];
           };

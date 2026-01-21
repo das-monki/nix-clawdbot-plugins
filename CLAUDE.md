@@ -146,10 +146,10 @@ voiceRegistry = {
 };
 ```
 
-6. Add the voice to the bundled list in `piper-speak-with-voices`:
+6. Add the voice to the bundled list in `piper-speak`:
 
 ```nix
-piper-speak-with-voices = mkPiperSpeak {
+piper-speak = mkPiperSpeak {
   inherit system;
   voices = [ "en_US-libritts_r-medium" "en_US-amy-medium" ];
 };
