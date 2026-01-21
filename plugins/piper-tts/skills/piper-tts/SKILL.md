@@ -1,6 +1,7 @@
 ---
 name: piper-tts
 description: Local neural text-to-speech using Piper
+always: true
 ---
 
 Use `piper-speak` to convert text to speech locally using the Piper TTS engine.
