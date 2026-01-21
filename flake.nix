@@ -3,12 +3,13 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs }:
     let
-      # Helper to create piper-speak for a given system
+      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems f;
+
       mkPiperSpeak = system:
         let
           pkgs = import nixpkgs { inherit system; };
@@ -27,12 +28,6 @@
             echo "  -l, --list          List installed voices"
             echo "  --download NAME     Download a voice model"
             echo "  -h, --help          Show this help"
-            echo ""
-            echo "Examples:"
-            echo "  piper-speak 'Hello world'"
-            echo "  piper-speak -v en_GB-alba-medium 'Hello from Britain'"
-            echo "  piper-speak -o greeting.wav 'This will be saved'"
-            echo "  piper-speak --download en_US-amy-medium"
           }
 
           list_voices() {
@@ -96,31 +91,32 @@
           fi
         '';
 
-    in
-    # Per-system outputs (packages, devShells)
-    flake-utils.lib.eachDefaultSystem (system:
-      let
-        pkgs = import nixpkgs { inherit system; };
-        piper-speak = mkPiperSpeak system;
-      in {
-        packages = {
-          piper-speak = piper-speak;
+    in {
+      packages = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          piper-speak = mkPiperSpeak system;
+        in {
+          inherit piper-speak;
           default = piper-speak;
-        };
+        }
+      );
 
-        devShells.default = pkgs.mkShell {
-          packages = [ piper-speak pkgs.piper-tts ];
-        };
-      }
-    )
-    //
-    # Top-level clawdbotPlugins (not per-system)
-    {
+      devShells = forAllSystems (system:
+        let
+          pkgs = import nixpkgs { inherit system; };
+          piper-speak = mkPiperSpeak system;
+        in {
+          default = pkgs.mkShell {
+            packages = [ piper-speak pkgs.piper-tts ];
+          };
+        }
+      );
+
       clawdbotPlugins = {
         piper-tts = {
           name = "piper-tts";
           skills = [ ./plugins/piper-tts/skills/piper-tts ];
-          # packages will be resolved per-system by the clawdbot module
           packages = [];
           needs = {
             stateDirs = [ ".local/share/piper-voices" ];
