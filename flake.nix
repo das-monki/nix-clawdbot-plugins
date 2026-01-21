@@ -193,10 +193,10 @@
           # Without bundled voices (downloads on first use)
           piper-speak = mkPiperSpeak { inherit system; voices = []; };
 
-          # With voices bundled (~136MB total)
+          # With voice bundled (~75MB)
           piper-speak-with-voices = mkPiperSpeak {
             inherit system;
-            voices = [ "en_US-lessac-medium" "en_US-libritts_r-medium" ];
+            voices = [ "en_US-libritts_r-medium" ];
           };
 
           # Default includes bundled voice for offline use

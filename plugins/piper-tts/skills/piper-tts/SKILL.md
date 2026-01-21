@@ -27,13 +27,9 @@ piper-speak --list
 piper-speak --download en_US-amy-medium
 ```
 
-## Bundled Voices
+## Bundled Voice
 
-These voices are included and work offline:
-- `en_US-lessac-medium` - American English, neutral
-- `en_US-libritts_r-medium` - American English, multi-speaker (use -s for speaker ID)
-
-**Note:** With multiple voices installed, you must specify which one to use with `-v`. If only one voice is installed, it's used automatically.
+The bundled voice `en_US-libritts_r-medium` (American English, multi-speaker) is used automatically. Use `-s` to select a speaker ID.
 
 ## Multi-Speaker Models
 

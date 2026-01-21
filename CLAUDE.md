@@ -151,7 +151,7 @@ voiceRegistry = {
 ```nix
 piper-speak-with-voices = mkPiperSpeak {
   inherit system;
-  voices = [ "en_US-lessac-medium" "en_US-libritts_r-medium" "en_US-amy-medium" ];
+  voices = [ "en_US-libritts_r-medium" "en_US-amy-medium" ];
 };
 ```
 
