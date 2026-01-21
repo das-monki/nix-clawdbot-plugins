@@ -49,20 +49,20 @@
           ) voices)}
         '';
 
-      # Create piper-speak wrapper with optional bundled voices
+      # Create speak wrapper with optional bundled voices
       mkPiperSpeak = { system, voices ? [] }:
         let
           pkgs = import nixpkgs { inherit system; };
           bundledVoices = mkPiperVoices { inherit pkgs voices; };
           bundledDir = if bundledVoices != null then "${bundledVoices}" else "";
-        in pkgs.writeShellScriptBin "piper-speak" ''
+        in pkgs.writeShellScriptBin "speak" ''
           set -euo pipefail
 
           BUNDLED_DIR="${bundledDir}"
           VOICES_DIR="''${PIPER_VOICES_DIR:-$HOME/.local/share/piper-voices}"
 
           usage() {
-            echo "Usage: piper-speak [OPTIONS] <text>"
+            echo "Usage: speak [OPTIONS] <text>"
             echo ""
             echo "Options:"
             echo "  -v, --voice NAME    Voice model name (auto-detected if only one installed)"
@@ -191,12 +191,12 @@
     in {
       packages = forAllSystems (system: {
           # Bundled voice (~75MB), can download additional voices at runtime
-          piper-speak = mkPiperSpeak {
+          speak = mkPiperSpeak {
             inherit system;
             voices = [ "en_US-libritts_r-medium" ];
           };
 
-          default = self.packages.${system}.piper-speak;
+          default = self.packages.${system}.speak;
         }
       );
 
@@ -206,7 +206,7 @@
         in {
           default = pkgs.mkShell {
             packages = [
-              self.packages.${system}.piper-speak
+              self.packages.${system}.speak
               pkgs.piper-tts
             ];
           };
@@ -217,7 +217,7 @@
         piper-tts = {
           name = "piper-tts";
           skills = [ ./plugins/piper-tts/skills/piper-tts ];
-          packages = [];  # Uses flake.packages (piper-speak-with-voices by default)
+          packages = [];  # Uses flake.packages (speak-with-voices by default)
           needs = {
             stateDirs = [ ".local/share/piper-voices" ];
             requiredEnv = [];

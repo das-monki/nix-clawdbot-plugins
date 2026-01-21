@@ -84,7 +84,7 @@ example-command --help
 nix develop
 
 # Test a package builds
-nix build .#piper-speak
+nix build .#speak
 
 # Test the full flake
 nix flake check
@@ -146,10 +146,10 @@ voiceRegistry = {
 };
 ```
 
-6. Add the voice to the bundled list in `piper-speak`:
+6. Add the voice to the bundled list in `speak`:
 
 ```nix
-piper-speak = mkPiperSpeak {
+speak = mkPiperSpeak {
   inherit system;
   voices = [ "en_US-libritts_r-medium" "en_US-amy-medium" ];
 };

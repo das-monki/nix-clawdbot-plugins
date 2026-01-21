@@ -1,31 +1,31 @@
 ---
 name: piper-tts
 description: Local neural text-to-speech using Piper
-metadata: {"clawdbot":{"always":true,"requires":{"bins":["piper-speak"]}}}
+metadata: {"clawdbot":{"always":true,"requires":{"bins":["speak"]}}}
 ---
 
-Use `piper-speak` to convert text to speech locally using the Piper TTS engine.
+Use `speak` to convert text to speech locally using the Piper TTS engine.
 
 ## Commands
 
 ```bash
 # Speak text aloud (plays through speakers)
-piper-speak "Hello, how are you today?"
+speak "Hello, how are you today?"
 
 # Save to a WAV file
-piper-speak -o output.wav "This will be saved to a file"
+speak -o output.wav "This will be saved to a file"
 
 # Use a different voice
-piper-speak -v en_US-libritts_r-medium "Hello world"
+speak -v en_US-libritts_r-medium "Hello world"
 
 # Use a multi-speaker model with specific speaker
-piper-speak -v en_US-libritts_r-medium -s 3922 "Hello world"
+speak -v en_US-libritts_r-medium -s 3922 "Hello world"
 
 # List installed voices
-piper-speak --list
+speak --list
 
 # Download a new voice
-piper-speak --download en_US-amy-medium
+speak --download en_US-amy-medium
 ```
 
 ## Bundled Voice
@@ -36,7 +36,7 @@ The bundled voice `en_US-libritts_r-medium` (American English, multi-speaker) is
 
 Some models like `en_US-libritts_r-medium` support multiple speakers. Use `-s <ID>` to select:
 ```bash
-piper-speak -v en_US-libritts_r-medium -s 3922 "This is speaker 3922"
+speak -v en_US-libritts_r-medium -s 3922 "This is speaker 3922"
 ```
 
 ## Additional Voices
