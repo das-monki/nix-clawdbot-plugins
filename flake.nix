@@ -264,6 +264,7 @@
             mkdir -p $out/bin
             ln -s ${ellie-cli.packages.${system}.default}/bin/elli $out/bin/ellie
           '';
+        ellie-cli = self.packages.${system}.ellie; # Alias for plugin discovery
 
         # Clank task management CLI
         clank = clank.packages.${system}.default;
