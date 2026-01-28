@@ -313,7 +313,7 @@
           packages = [ ]; # Uses flake.packages.clank
           needs = {
             stateDirs = [ ];
-            requiredEnv = [ "CLANK_API" ]; # API URL (e.g., http://localhost:8080)
+            requiredEnv = [ ]; # CLANK_API is a URL, not a file - validated by skill at runtime
           };
         };
       };
