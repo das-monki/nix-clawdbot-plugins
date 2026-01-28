@@ -3,25 +3,44 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    ellie-cli = {
+      url = "github:das-monki/ellie-cli";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    clank = {
+      url = "github:das-monki/clank";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      ellie-cli,
+      clank,
+    }:
     let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      supportedSystems = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
       forAllSystems = f: nixpkgs.lib.genAttrs supportedSystems f;
 
       # Voice model registry with pre-computed hashes
       voiceRegistry = {
-        "en_US-lessac-medium" = {
-          onnx = {
-            url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx";
-            hash = "sha256:17q1mzm6xd5i2rxx2xwqkxvfx796kmp1lvk4mwkph602k7k0kzjy";
-          };
-          json = {
-            url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json";
-            hash = "sha256:184hnvd8389xpdm0x2w6phss23v5pb34i0lhd4nmy1gdgd0rrqgg";
-          };
-        };
+        # "en_US-lessac-medium" = {
+        #   onnx = {
+        #     url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx";
+        #     hash = "sha256:17q1mzm6xd5i2rxx2xwqkxvfx796kmp1lvk4mwkph602k7k0kzjy";
+        #   };
+        #   json = {
+        #     url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/lessac/medium/en_US-lessac-medium.onnx.json";
+        #     hash = "sha256:184hnvd8389xpdm0x2w6phss23v5pb34i0lhd4nmy1gdgd0rrqgg";
+        #   };
+        # };
         "en_US-libritts_r-medium" = {
           onnx = {
             url = "https://huggingface.co/rhasspy/piper-voices/resolve/main/en/en_US/libritts_r/medium/en_US-libritts_r-medium.onnx";
@@ -37,25 +56,49 @@
       };
 
       # Create a derivation containing bundled voice models
-      mkPiperVoices = { pkgs, voices }:
-        if voices == [] then null
-        else pkgs.runCommand "piper-voices-1.0.0" {} ''
-          mkdir -p $out
-          ${builtins.concatStringsSep "\n" (map (voice:
-            let v = voiceRegistry.${voice}; in ''
-              cp ${pkgs.fetchurl { url = v.onnx.url; hash = v.onnx.hash; }} $out/${voice}.onnx
-              cp ${pkgs.fetchurl { url = v.json.url; hash = v.json.hash; }} $out/${voice}.onnx.json
-            ''
-          ) voices)}
-        '';
+      mkPiperVoices =
+        { pkgs, voices }:
+        if voices == [ ] then
+          null
+        else
+          pkgs.runCommand "piper-voices-1.0.0" { } ''
+            mkdir -p $out
+            ${builtins.concatStringsSep "\n" (
+              map (
+                voice:
+                let
+                  v = voiceRegistry.${voice};
+                in
+                ''
+                  cp ${
+                    pkgs.fetchurl {
+                      url = v.onnx.url;
+                      hash = v.onnx.hash;
+                    }
+                  } $out/${voice}.onnx
+                  cp ${
+                    pkgs.fetchurl {
+                      url = v.json.url;
+                      hash = v.json.hash;
+                    }
+                  } $out/${voice}.onnx.json
+                ''
+              ) voices
+            )}
+          '';
 
       # Create speak wrapper with optional bundled voices
-      mkPiperSpeak = { system, voices ? [] }:
+      mkPiperSpeak =
+        {
+          system,
+          voices ? [ ],
+        }:
         let
           pkgs = import nixpkgs { inherit system; };
           bundledVoices = mkPiperVoices { inherit pkgs voices; };
           bundledDir = if bundledVoices != null then "${bundledVoices}" else "";
-        in pkgs.writeShellScriptBin "speak" ''
+        in
+        pkgs.writeShellScriptBin "speak" ''
           set -euo pipefail
 
           BUNDLED_DIR="${bundledDir}"
@@ -71,20 +114,30 @@
             echo "  -l, --list          List installed voices"
             echo "  --download NAME     Download a voice model"
             echo "  -h, --help          Show this help"
-            ${if bundledDir != "" then ''
-            echo ""
-            echo "Bundled voices: ${builtins.concatStringsSep ", " voices}"
-            '' else ""}
+            ${
+              if bundledDir != "" then
+                ''
+                  echo ""
+                  echo "Bundled voices: ${builtins.concatStringsSep ", " voices}"
+                ''
+              else
+                ""
+            }
           }
 
           # Get all installed voices (bundled + downloaded)
           get_installed_voices() {
             local voices=()
-            ${if bundledDir != "" then ''
-            while IFS= read -r v; do
-              [ -n "$v" ] && voices+=("$v")
-            done < <(find "$BUNDLED_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sort)
-            '' else ""}
+            ${
+              if bundledDir != "" then
+                ''
+                  while IFS= read -r v; do
+                    [ -n "$v" ] && voices+=("$v")
+                  done < <(find "$BUNDLED_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sort)
+                ''
+              else
+                ""
+            }
             if [ -d "$VOICES_DIR" ]; then
               while IFS= read -r v; do
                 [ -n "$v" ] && voices+=("$v")
@@ -95,10 +148,15 @@
 
           list_voices() {
             echo "Installed voices:"
-            ${if bundledDir != "" then ''
-            echo "  Bundled:"
-            find "$BUNDLED_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sed 's/^/    /' | sort
-            '' else ""}
+            ${
+              if bundledDir != "" then
+                ''
+                  echo "  Bundled:"
+                  find "$BUNDLED_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sed 's/^/    /' | sort
+                ''
+              else
+                ""
+            }
             if [ -d "$VOICES_DIR" ]; then
               echo "  Downloaded ($VOICES_DIR):"
               find "$VOICES_DIR" -name "*.onnx" -exec basename {} .onnx \; 2>/dev/null | sed 's/^/    /' | sort
@@ -188,22 +246,37 @@
           fi
         '';
 
-    in {
+    in
+    {
       packages = forAllSystems (system: {
-          # Bundled voice (~75MB), can download additional voices at runtime
-          speak = mkPiperSpeak {
-            inherit system;
-            voices = [ "en_US-libritts_r-medium" ];
-          };
+        # Bundled voice (~75MB), can download additional voices at runtime
+        speak = mkPiperSpeak {
+          inherit system;
+          voices = [ "en_US-libritts_r-medium" ];
+        };
 
-          default = self.packages.${system}.speak;
-        }
-      );
+        # ELLIE Daily Planner CLI
+        ellie =
+          let
+            pkgs = import nixpkgs { inherit system; };
+          in
+          pkgs.runCommand "ellie" { } ''
+            mkdir -p $out/bin
+            ln -s ${ellie-cli.packages.${system}.default}/bin/elli $out/bin/ellie
+          '';
 
-      devShells = forAllSystems (system:
+        # Clank task management CLI
+        clank = clank.packages.${system}.default;
+
+        default = self.packages.${system}.speak;
+      });
+
+      devShells = forAllSystems (
+        system:
         let
           pkgs = import nixpkgs { inherit system; };
-        in {
+        in
+        {
           default = pkgs.mkShell {
             packages = [
               self.packages.${system}.speak
@@ -217,10 +290,30 @@
         piper-tts = {
           name = "piper-tts";
           skills = [ ./plugins/piper-tts/skills/piper-tts ];
-          packages = [];  # Uses flake.packages (speak-with-voices by default)
+          packages = [ ]; # Uses flake.packages (speak-with-voices by default)
           needs = {
             stateDirs = [ ".local/share/piper-voices" ];
-            requiredEnv = [];
+            requiredEnv = [ ];
+          };
+        };
+
+        ellie-cli = {
+          name = "ellie-cli";
+          skills = [ ./plugins/ellie-cli/skills/ellie-cli ];
+          packages = [ ]; # Uses flake.packages.ellie
+          needs = {
+            stateDirs = [ ".config/ellie" ];
+            requiredEnv = [ "ELLIE_API_KEY_FILE" ]; # Path to file containing API key (agenix-friendly)
+          };
+        };
+
+        clank = {
+          name = "clank";
+          skills = [ ./plugins/clank/skills/clank ];
+          packages = [ ]; # Uses flake.packages.clank
+          needs = {
+            stateDirs = [ ];
+            requiredEnv = [ "CLANK_API" ]; # API URL (e.g., http://localhost:8080)
           };
         };
       };

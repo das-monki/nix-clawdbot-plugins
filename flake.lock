@@ -1,5 +1,86 @@
 {
   "nodes": {
+    "clank": {
+      "inputs": {
+        "flake-utils": "flake-utils",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1769615763,
+        "narHash": "sha256-dZYSeOOLouF/OtxFy9wJ6XaKMaUvjIP0Fs+EybjXIjw=",
+        "owner": "das-monki",
+        "repo": "clank",
+        "rev": "3d62785c3fbf65b7727f006a326ca7f15b0ea850",
+        "type": "github"
+      },
+      "original": {
+        "owner": "das-monki",
+        "repo": "clank",
+        "type": "github"
+      }
+    },
+    "devshell": {
+      "inputs": {
+        "nixpkgs": [
+          "ellie-cli",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1768818222,
+        "narHash": "sha256-460jc0+CZfyaO8+w8JNtlClB2n4ui1RbHfPTLkpwhU8=",
+        "owner": "numtide",
+        "repo": "devshell",
+        "rev": "255a2b1725a20d060f566e4755dbf571bbbb5f76",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "devshell",
+        "type": "github"
+      }
+    },
+    "ellie-cli": {
+      "inputs": {
+        "devshell": "devshell",
+        "nixpkgs": [
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1769619501,
+        "narHash": "sha256-u9jUbSkYzH0ybxPrBxzm1Qx/BDX3qWnByW73IDlZPpg=",
+        "owner": "das-monki",
+        "repo": "ellie-cli",
+        "rev": "492d22ddc630303b66bb52b9ecc3a1f9960613a6",
+        "type": "github"
+      },
+      "original": {
+        "owner": "das-monki",
+        "repo": "ellie-cli",
+        "type": "github"
+      }
+    },
+    "flake-utils": {
+      "inputs": {
+        "systems": "systems"
+      },
+      "locked": {
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "numtide",
+        "repo": "flake-utils",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1768886240,
@@ -18,7 +99,24 @@
     },
     "root": {
       "inputs": {
+        "clank": "clank",
+        "ellie-cli": "ellie-cli",
         "nixpkgs": "nixpkgs"
+      }
+    },
+    "systems": {
+      "locked": {
+        "lastModified": 1681028828,
+        "narHash": "sha256-Vy1rq5AaRuLzOxct8nz4T6wlgyUR7zLU309k9mBC768=",
+        "owner": "nix-systems",
+        "repo": "default",
+        "rev": "da67096a3b9bf56a91d16901293e51ba5b49a27e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nix-systems",
+        "repo": "default",
+        "type": "github"
       }
     }
   },
