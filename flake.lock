@@ -50,11 +50,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1769677276,
-        "narHash": "sha256-HhZCpPk+GcDOMUGRpZZjTgckqt67svSeJhr++6Z+wlw=",
+        "lastModified": 1770102154,
+        "narHash": "sha256-KohJkjyl675/ILnuUmFwwe8DwRS69x0uMMFRb92Iu5E=",
         "owner": "das-monki",
         "repo": "ellie-cli",
-        "rev": "64d6d8f1df61de36fcbf278aa59ca8977268f9de",
+        "rev": "d7409c4a469054329704c9950ae9271c1089347b",
         "type": "github"
       },
       "original": {
